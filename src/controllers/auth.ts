@@ -1,49 +1,42 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
+import * as jwt from '../utils/jwt';
+import * as httpErrors from '../utils/httpErrors';
 import { User } from '../models/users';
-import { JWT_SECRET } from '../utils/jwt';
-import { errorHandler } from '../middlewares/errorHandler';
-import { HttpError } from '../utils/httpErrors';
+import { RequestWithUserId } from '../types/requestWithUserId';
 
-export async function signIn(req: Request, res: Response, next: NextFunction) {
-  try {
-    // Get the email and password from the request body
+export async function  login  (req: RequestWithUserId, res: Response){
     const { email, password } = req.body;
-
-    // Validate the email and password
-    if (!email || !password) {
-      throw new HttpError(400, 'Missing email or password');
-    }
-
-    // Find a user with the matching email
-    const user = await User.findOne({ email });
+  
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      throw new HttpError(401, 'Invalid email or password');
+      throw httpErrors.unauthorized('Email not found');
     }
-
-    // Check if the password is correct
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      throw new HttpError(401, 'Invalid email or password');
+  
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw httpErrors.unauthorized('password failed');
     }
+  
+    // Store the user ID in the session object
+    req.session.userId = user.id;
+  
+    // Return the JWT in the response
+    res.status(200).json({ token: jwt.sign({ _id: user._id }) });
+  };
 
-    // Generate a JWT for the user
-    const token = jwt.sign({ id: user._id }, JWT_SECRET);
-
-    // Send the JWT in the response
-    res.send({ token });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function signOut(req: Request, res: Response, next: NextFunction) {
-  try {
-    // The user has already been authenticated by the authenticate middleware,
-    // so we can just send a success response
-    res.send({ message: 'Successfully signed out' });
-  } catch (error) {
-    next(error);
-  }
-}
+  
+  export const signout = (req: Request, res: Response) => {
+    // Clear the session data
+    req.session.destroy((err) => {
+      if (err) {
+        // If there was an error deleting the session data, send a 500 Internal Server Error response
+        res.status(500).send();
+        return;
+      }
+  
+      // If the session data was deleted successfully, send a 200 OK response
+      console.log("logged out")
+      res.sendStatus(200);
+    });
+  };

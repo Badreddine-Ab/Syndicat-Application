@@ -2,7 +2,10 @@ import express from 'express';
 import { connectDatabase } from './database';
 import authRouter from './routes/auth';
 import { User, userSchema } from './models/users'; // import the User model and userSchema
+import cookieParser from 'cookie-parser';
+import expressSession from 'express-session';
 import bcrypt from 'bcryptjs'; // import the bcryptjs library
+import { errorHandler } from './middlewares/errorHandler';
 // import { apartmentRouter } from './routes/apartments';
 // import { errorMiddleware } from './middleware/error';
 
@@ -12,6 +15,13 @@ connectDatabase()
 
 const app = express();
 
+app.use(cookieParser());
+app.use(expressSession({
+  secret: process.env.JWT_SECRET as string,
+  resave: false,
+  saveUninitialized: true,
+}));
+
 // Apply middleware
 app.use(express.json());
 
@@ -20,7 +30,7 @@ app.use('/auth', authRouter);
 // app.use('/apartments', apartmentRouter);
 
 // Apply error middleware
-// app.use(errorMiddleware);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

@@ -6,7 +6,7 @@ export type UserDocument = mongoose.Document & {
   tokens: string[];
 };
 
-const userSchema = new mongoose.Schema({
+export const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,

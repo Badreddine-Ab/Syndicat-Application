@@ -1,10 +1,16 @@
 import { Router } from 'express';
-import { signIn, signOut } from '../controllers/auth';
+import { login,signout } from '../controllers/auth';
 import  {authenticate}  from '../middlewares/authenticate';
+import { Application } from 'express';
 
-const router = Router();
+import express from 'express'
 
-router.post('/sign-in', signIn);
-router.post('/sign-out', authenticate, signOut);
+
+const router: Router = express.Router();
+
+
+router.post('/sign-in', login);
+router.post('/sign-out',  signout);
+
 
 export default router;
